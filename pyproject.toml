@@ -1,0 +1,14 @@
+[project]
+
+name = "neighbor_list_skin"
+requires-python = ">=3.11"
+dependencies = [ "numpy" ]
+readme = "README.md"
+license = { file = "LICENSE" }
+dynamic = ["version"]
+
+[tool.setuptools.packages.find]
+    exclude = [ "tests*", "build*" ]
+
+[tool.setuptools.dynamic]
+version = {attr  = "neighbor_list_skin.__version__"}
