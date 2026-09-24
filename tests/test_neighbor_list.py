@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 
 from ase.atoms import Atoms
-from neighbor_list_skin.neighbors import NeighborListSkin
+from neighbor_list_skin import NeighborListSkin
 try:
     from matscipy.neighbours import neighbour_list as neighbor_list_simple
 except:
