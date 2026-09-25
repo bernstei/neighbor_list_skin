@@ -1,0 +1,78 @@
+# This is testing the python versions *other than* the
+#   one in the QUIP Docker, which is 3.7.10 at the time
+#   of writing this. Coverage is disabled.
+
+name: Python Package and tests
+
+# on all push actions AND can be triggered manually as well
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ 3.11 ]
+      max-parallel: 5
+    env:
+      coverage-on-version: NONE
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Add conda to system path
+        run: |
+          # $CONDA is an environment variable pointing to the root of the miniconda directory
+          echo $CONDA/bin >> $GITHUB_PATH
+
+      # - name: Install Dependencies from Conda
+        # run: conda env update --file=devtools/conda-envs/environment.yml --name=base
+
+      - name: Install pip from Conda
+        run: conda install pip
+
+      - name: Install pytest requirements from pip (specific pymatnext dependencies will be automatically installed when it is)
+        run: pip install wheel setuptools ruff pytest pytest-cov pytest-timeout
+
+      - name: Install latest ASE from gitlab
+        run: pip install git+https://gitlab.com/ase/ase.git
+
+      - name: Install matscipy after ASE
+        # for now use most recent github, fixes issue with deprecated/unsupported np.str in eam.io
+        # run: pip install matscipy
+        run: python3 -m pip install git+https://github.com/libAtoms/matscipy/
+
+      - name: Lint with ruff
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          ruff check --ignore I001,LOG015 pymatnext
+
+      - name: Test with pytest - plain
+        if: env.coverage-on-version != matrix.python-version
+        run: |
+          pytest -rxXs
+
+      - name: Test with pytest - coverage
+        if: env.coverage-on-version == matrix.python-version
+        run: |
+          pytest -v --cov=pymatnext --cov-report term --cov-report html --cov-config=tests/.coveragerc --cov-report term-missing --cov-report term:skip-covered -s -rxXs
+
+      # # DEBUGGING
+      # - name: Setup tmate session
+          # if: failure()
+          # uses: mxschmitt/action-tmate@v3
+          # timeout-minutes: 15
+
+      - name: 'Upload Coverage Data'
+        uses: actions/upload-artifact@v4
+        if: env.coverage-on-version == matrix.python-version
+        with:
+          name: coverage-html-${{ matrix.python-version }}
+          path: coverage-html/
+          retention-days: 7
