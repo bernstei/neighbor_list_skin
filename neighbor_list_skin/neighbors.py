@@ -3,7 +3,10 @@ import numpy as np
 
 class NeighborListSkin:
     """Neighbor list calculator that avoids recalculation if atoms have not moved as
-    far as a 'skin' distance
+    far as a 'skin' distance.  Object constructor takes a neighbor list calculation
+    function compatible with `ase.neighbors.neighbor_list` and a skin distance, and
+    resulting object can the be called with same arguments as `ase.neighbors.neighbor_list`.
+
     """
 
     def __init__(self, neighbor_list, skin=1.0):
@@ -13,7 +16,7 @@ class NeighborListSkin:
         ----------
         skin: float, default 1.0
             extra padding to avoid recalculation if no atom has moved more
-            than half skin
+            than half skin, < 0 to disable
         neighbor_list: function
             ase.neighborlist.neighbor_list compatible function
         """
@@ -109,7 +112,10 @@ class NeighborListSkin:
             elif isinstance(self.cutoff, float):
                 use_cutoff = self.cutoff + self.skin
             else:
-                use_cutoff = [c + self.skin / 2.0 for c in self.cutoff]
+                try:
+                    use_cutoff = [c + self.skin / 2.0 for c in self.cutoff]
+                except TypeError as exc:
+                    raise TypeError(f"cutoff '{self.cutoff}' not a dict, float, or iterable of floats") from exc
             self.positions_s_wrap = positions_s_wrap.astype(int) # locally generated
             self.positions_wrapped = (positions_s - self.positions_s_wrap) @ self.cell
 
