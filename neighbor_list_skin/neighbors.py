@@ -1,5 +1,7 @@
 from copy import deepcopy
+
 import numpy as np
+
 
 class NeighborListSkin:
     """Neighbor list calculator that avoids recalculation if atoms have not moved as
