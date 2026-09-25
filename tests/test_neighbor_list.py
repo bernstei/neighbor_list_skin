@@ -9,22 +9,22 @@ try:
 except:
     from ase.neighborlist import neighbor_list as neighbor_list_simple
 
-def _compare_lists (ijdS0, ijdS1, r_cut):
+def _compare_lists (ijdDS0, ijdDS1, r_cut):
     """compare two neighbor lists and ensure that all entries within cutoff are
     identical"""
 
     # sort as tuples, which will result in lexical order on all the fields
-    sort_order_0 = np.asarray(sorted(range(len(ijdS0[0])), key=lambda i: tuple([ijdS0[0][i], ijdS0[1][i]] + ijdS0[3][i].tolist())))
-    sort_order_1 = np.asarray(sorted(range(len(ijdS1[0])), key=lambda i: tuple([ijdS1[0][i], ijdS1[1][i]] + ijdS1[3][i].tolist())))
+    sort_order_0 = np.asarray(sorted(range(len(ijdDS0[0])), key=lambda i: tuple([ijdDS0[0][i], ijdDS0[1][i]] + ijdDS0[4][i].tolist())))
+    sort_order_1 = np.asarray(sorted(range(len(ijdDS1[0])), key=lambda i: tuple([ijdDS1[0][i], ijdDS1[1][i]] + ijdDS1[4][i].tolist())))
 
-    include_0 = ijdS0[2][sort_order_0] <= r_cut
-    include_1 = ijdS1[2][sort_order_1] <= r_cut
+    include_0 = ijdDS0[2][sort_order_0] <= r_cut
+    include_1 = ijdDS1[2][sort_order_1] <= r_cut
 
     same = (sum(include_0) == sum(include_1))
 
     if same:
-        for ind in range(len(ijdS0)):
-            same &= np.allclose(ijdS0[ind][sort_order_0][include_0], ijdS1[ind][sort_order_1][include_1])
+        for ind in range(len(ijdDS0)):
+            same &= np.allclose(ijdDS0[ind][sort_order_0][include_0], ijdDS1[ind][sort_order_1][include_1])
 
     return same
 
@@ -43,11 +43,11 @@ def test_basic_pos():
     neighbor_list = NeighborListSkin(neighbor_list_simple, skin=0.1)
     n_rebuild = 0
     for i in range(100):
-        ijdS_skin = neighbor_list('ijdS', atoms, r_cut)
+        ijdDS_skin = neighbor_list('ijdDS', atoms, r_cut)
         n_rebuild += neighbor_list.n_since_last_build == 0
-        ijdS_msp = neighbor_list_simple('ijdS', atoms, r_cut)
+        ijdDS_msp = neighbor_list_simple('ijdDS', atoms, r_cut)
 
-        same = _compare_lists(ijdS_skin, ijdS_msp, r_cut)
+        same = _compare_lists(ijdDS_skin, ijdDS_msp, r_cut)
         assert same
 
         atoms.positions += dp
@@ -67,11 +67,11 @@ def test_basic_pos():
     neighbor_list = NeighborListSkin(neighbor_list_simple, skin=0.1)
     n_rebuild_imgs = 0
     for i in range(100):
-        ijdS_skin = neighbor_list('ijdS', atoms, r_cut)
+        ijdDS_skin = neighbor_list('ijdDS', atoms, r_cut)
         n_rebuild_imgs += neighbor_list.n_since_last_build == 0
-        ijdS_msp = neighbor_list_simple('ijdS', atoms, r_cut)
+        ijdDS_msp = neighbor_list_simple('ijdDS', atoms, r_cut)
 
-        same = _compare_lists(ijdS_skin, ijdS_msp, r_cut)
+        same = _compare_lists(ijdDS_skin, ijdDS_msp, r_cut)
         assert same
 
         atoms.positions += dp
@@ -94,10 +94,10 @@ def test_basic_cell():
     neighbor_list = NeighborListSkin(neighbor_list_simple, skin=0.1)
     n_rebuild = 0
     for i in range(100):
-        ijdS_skin = neighbor_list('ijdS', atoms, r_cut)
+        ijdDS_skin = neighbor_list('ijdDS', atoms, r_cut)
         n_rebuild += neighbor_list.n_since_last_build == 0
-        ijdS_msp = neighbor_list_simple('ijdS', atoms, r_cut)
-        same = _compare_lists(ijdS_skin, ijdS_msp, r_cut)
+        ijdDS_msp = neighbor_list_simple('ijdDS', atoms, r_cut)
+        same = _compare_lists(ijdDS_skin, ijdDS_msp, r_cut)
         assert same
 
         atoms.set_cell(atoms.cell @ (np.eye(3) + dc), True)
@@ -117,10 +117,10 @@ def test_basic_cell():
     neighbor_list = NeighborListSkin(neighbor_list_simple, skin=0.1)
     n_rebuild_imgs = 0
     for i in range(100):
-        ijdS_skin = neighbor_list('ijdS', atoms, r_cut)
+        ijdDS_skin = neighbor_list('ijdDS', atoms, r_cut)
         n_rebuild_imgs += (neighbor_list.n_since_last_build == 0)
-        ijdS_msp = neighbor_list_simple('ijdS', atoms, r_cut)
-        same = _compare_lists(ijdS_skin, ijdS_msp, r_cut)
+        ijdDS_msp = neighbor_list_simple('ijdDS', atoms, r_cut)
+        same = _compare_lists(ijdDS_skin, ijdDS_msp, r_cut)
         assert same
 
         atoms.set_cell(atoms.cell @ (np.eye(3) + dc), True)
@@ -162,19 +162,19 @@ def test_skin_far_move_in():
     neighbor_list = NeighborListSkin(neighbor_list_simple, skin=skin)
 
     # initial list
-    _ = neighbor_list('ijdS', atoms, cutoff=cutoff)
+    _ = neighbor_list('ijdDS', atoms, cutoff=cutoff)
 
     # modify cell to shift image (0, 5, 0) within cutoff
     Lp = (cutoff - eps) / 5.0
     atoms.cell[1, 1] = Lp
 
-    ijdS = neighbor_list('ijdS', atoms, cutoff=cutoff)
+    ijdDS = neighbor_list('ijdDS', atoms, cutoff=cutoff)
     # should have rebuilt
     assert neighbor_list.n_since_last_build == 0
 
     # again, from scratch
     nl_scratch = NeighborListSkin(neighbor_list_simple, skin=skin)
-    ijdS_scratch = nl_scratch('ijdS', atoms, cutoff=cutoff)
+    ijdDS_scratch = nl_scratch('ijdDS', atoms, cutoff=cutoff)
 
-    same = _compare_lists(ijdS, ijdS_scratch, cutoff)
+    same = _compare_lists(ijdDS, ijdDS_scratch, cutoff)
     assert same
